@@ -17,6 +17,15 @@ void loop() {
   follow(21,minDistance,1,0,0); 
 }
 
+/*GENERAL IDEA */
+/*The seensor begins sweeping in one direction, and will turn around to the other direction
+when it hits the servo's maximum angle or minimum angle. If the sensor catches an object less
+than the minimum distance away at 3 consecutive servo angles, it enters an object-found state.
+When in the object found state, the sensor looks for an edge to the object. If the sensor picks
+up a value greater than 1.3 times the object's original distance at 3 consecutive angles, it has
+found an edge. Once an edge is found, the sensor sweep reverses direction and begins looking for
+the object again. */
+
 /*Takes the angle to begin searching at, the minimum distance to be considered an object,
 the direction to move the sensor in (-1 or 1), an int 'verifyFound' to describe whether the 
 function is currently tracking an object and account for sensor error in finding an object; 
@@ -46,7 +55,7 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
 	 Serial.print(distance);
 	 Serial.println();
 
-	 /* veriftFound gets set to 0 when we find an edge. This is because we need to find
+	 /* verifyFound gets set to 0 when we find an edge. This is because we need to find
 	    the object again when sweeping in the reverse direction, in case it has moved. verifyEdge will
 	    increase every time there's a disparity between the previous distance and the newDistance. 
 	    After verifyEdge is greater than a constant, we can be sure we've hit an edge and not a sensor glitch */ 
@@ -66,9 +75,9 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
 	 follow(angle,distance,dir,verifyFound,verifyEdge);
  }  
  
-  //When the current proximity is closer than the given proximity, we've found an object.
- //Set verifyFound up by one. After a few recursive calls, if this is still true, we will
- //begin tracking the object. 
+  //When the current proximity is closer than the given distance threshold, we've found an object.
+ //Set verifyFound up by one. After a few recursive calls, if this is true for consecutive angles, 
+ //we will begin tracking the object. 
  if(newDistance > distance && verifyFound > 0) verifyFound--;
  else if(newDistance <= distance) verifyFound++; 
  else if(verifyFound >= 3) distance = newDistance; 
