@@ -50,15 +50,15 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
 	    the object again when sweeping in the reverse direction, in case it has moved. verifyEdge will
 	    increase every time there's a disparity between the previous distance and the newDistance. 
 	    After verifyEdge is greater than a constant, we can be sure we've hit an edge and not a sensor glitch */ 
-	 if(newDistance >  1.3*distance || newDistance < .7*distance) verifyEdge++; 
+	 if(newDistance >  1.3*distance) verifyEdge++; 
 	 else{
 		 if (verifyEdge>0) verifyEdge--; //start removing verifyEdge points if there aren't disparities. 
                  distance = newDistance;
 	 }
    
 	 //We're sure there's an edge, reverse sensor direction and look for the object again
-	 if(verifyEdge>=6){
-		 follow(angle,1.2*distance,-dir,0,0);
+	 if(verifyEdge>=3){
+		 follow(angle,1.05*distance,-dir,0,0);
 	 }
    
 	 //Keep following the object
@@ -71,6 +71,7 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
  //begin tracking the object. 
  if(newDistance > distance && verifyFound > 0) verifyFound--;
  else if(newDistance <= distance) verifyFound++; 
+ else if(verifyFound >= 3) distance = newDistance; 
  
  //catchall. If The object isn't found, just keep scanning
  follow(angle,distance,dir,verifyFound,0);
