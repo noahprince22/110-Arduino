@@ -4,7 +4,7 @@
 Servo myservo;
 int photoPin = A0;
 int offset = 1;
-int minDistance = 30;
+int minDistance = 20;
   //Ultrasonic ultrasonic(12,13);
 
 void setup(){
@@ -38,13 +38,9 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
  //grab sensor data
  int newDistance = analogRead(1);
  
- //When the current proximity is closer than the given proximity, we've found an object.
- //Set verifyFound up by one. After a few recursive calls, if this is still true, we will
- //begin tracking the object. 
- if(newDistance <= distance) follow(angle,newDistance,dir,++verifyFound,0);
   
  //If we've found an object, follow it until we hit an edge, then reverse direction
- if(verifyFound > 3){ 
+ if(verifyFound >= 3){ 
 	 Serial.print(angle);
 	 Serial.print(",");
 	 Serial.print(distance);
@@ -57,19 +53,26 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
 	 if(newDistance >  1.3*distance || newDistance < .7*distance) verifyEdge++; 
 	 else{
 		 if (verifyEdge>0) verifyEdge--; //start removing verifyEdge points if there aren't disparities. 
+                 distance = newDistance;
 	 }
    
 	 //We're sure there's an edge, reverse sensor direction and look for the object again
-	 if(verifyEdge>=2){
-		 follow(angle,distance,-dir,0,0);
+	 if(verifyEdge>=6){
+		 follow(angle,1.2*distance,-dir,0,0);
 	 }
    
 	 //Keep following the object
 	 //if(newDistance <= distance) follow(angle,newDistance,dir,true,0); 
 	 follow(angle,distance,dir,verifyFound,verifyEdge);
- }
+ }  
+ 
+  //When the current proximity is closer than the given proximity, we've found an object.
+ //Set verifyFound up by one. After a few recursive calls, if this is still true, we will
+ //begin tracking the object. 
+ if(newDistance > distance && verifyFound > 0) verifyFound--;
+ else if(newDistance <= distance) verifyFound++; 
  
  //catchall. If The object isn't found, just keep scanning
- follow(angle,distance,dir,0,0);
+ follow(angle,distance,dir,verifyFound,0);
 
 }
