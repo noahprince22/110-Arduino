@@ -2,7 +2,7 @@
 #include <Ultrasonic.h>
 
 Servo myservo;
-int photoPin = A0;
+//int photoPin = A0;
 int offset = 1;
 int minDistance = 20;
   //Ultrasonic ultrasonic(12,13);
@@ -18,7 +18,7 @@ void loop() {
 }
 
 /*GENERAL IDEA */
-/*The seensor begins sweeping in one direction, and will turn around to the other direction
+/*The sensor begins sweeping in one direction, and will turn around to the other direction
 when it hits the servo's maximum angle or minimum angle. If the sensor catches an object less
 than the minimum distance away at 3 consecutive servo angles, it enters an object-found state.
 When in the object found state, the sensor looks for an edge to the object. If the sensor picks
@@ -31,7 +31,7 @@ the direction to move the sensor in (-1 or 1), an int 'verifyFound' to describe 
 function is currently tracking an object and account for sensor error in finding an object; 
 and verifyEdge, an integer used to count how many times the sensor has seen an edge in a row*/
 void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
- delay(12);
+ delay(8);
    
  angle = angle + dir;
  myservo.write(angle);
@@ -40,13 +40,13 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge){
  if(angle > 160){ 
    follow(159,minDistance,-dir,0,verifyEdge); 
  }
- if(angle < 10){
-   follow(11,minDistance,-dir,0,verifyEdge);
+ if(angle < 15){
+   follow(16,minDistance,-dir,0,verifyEdge);
  }
  
  //grab sensor data
  int newDistance = analogRead(1);
- 
+ //int newDistance = ultrasonic.Ranging(CM);
   
  //If we've found an object, follow it until we hit an edge, then reverse direction
  if(verifyFound >= 3){ 
