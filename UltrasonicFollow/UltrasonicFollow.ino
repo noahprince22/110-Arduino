@@ -17,17 +17,17 @@ void loop() {
   for(int i = 15;i<160;i++){
     myservo.write(i); 
     int newDistance = 0;
-     for(int i = 0; i<10;i++){
+     for(int i = 0; i<7;i++){
 	 newDistance += analogRead(A1);
           delay(1);
      }
-      distance+= newDistance = (int) newDistance/10;
+      distance+= newDistance = (int) newDistance/7;
   }
   minDistance = (int) (distance/145)/2;
   Serial.print("MINDISTANCE =");
   Serial.println(minDistance);
 	//Serial.print(ultrasonic.Ranging(CM));
-  follow(21,minDistance,3,0,0,2); 
+  follow(21,minDistance,3,0,0,400); 
 }
 
 /*GENERAL IDEA */
@@ -51,16 +51,16 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
  int newDistance = 0;
  for(int i = 0; i<14;i++){
 	 newDistance += analogRead(A1);
-          delay(delayValue);
+          delayMicroseconds(delayValue*10);
  }
  newDistance = (int) newDistance/14;
 
  //If the servo hits the edge of the viewing angle, it's likely lost the object. Start over looking in the opposite directon.
- if(angle > 160){ 
-   follow(159,minDistance,-dir,0,0,delayValue); 
+ if(angle > 170){ 
+   follow(169,minDistance,-dir,0,0,delayValue); 
  }
- if(angle < 15){
-   follow(16,minDistance,-dir,0,0,delayValue);
+ if(angle < 5){
+   follow(6,minDistance,-dir,0,0,delayValue);
  }
  
  //grab sensor data
@@ -75,7 +75,7 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
 	 Serial.print("; ");
          if(direction) dir = 2;
          else dir = -2; 
-         delayValue = 2;
+         delayValue = 150;
 
 	 /* verifyFound gets set to 0 when we find an edge. This is because we need to find
 	    the object again when sweeping in the reverse direction, in case it has moved. verifyEdge will
@@ -88,28 +88,37 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
                 Serial.print(1.3*distance);
                 Serial.print(")           ");   
                 verifyEdge++; 
+                if(direction) dir = 1;
+                 else dir = -1; 
+                delayValue=150; 
                 newDistance = distance; 
          }
 	 else{
 		 if (verifyEdge>0) verifyEdge--; //start removing verifyEdge points if there aren't disparities. 
                  distance = newDistance;
+                 if(delayValue > 50) delayValue-=9; 
 	 }
    
 	 //We're sure there's an edge, reverse sensor direction and look for the object again
 	 if(verifyEdge>=3){
                    Serial.println();
-		 follow(angle+dir,distance,-dir,--verifyFound,0,delayValue);
+		 follow(angle+dir,distance,-dir,--verifyFound,0,400);
 	 }
    
-	 //Keep following the object
+	 //Keep following the objectg
 	 //if(newDistance <= distance) follow(angle,newDistance,dir,true,0); 
 	 follow(angle,newDistance,dir,verifyFound,verifyEdge,delayValue);
  }
- if(verifyFound==0){
-         if(direction) dir = 4;
-         else dir = -4;
-         delayValue = 2; 
- } 
+ if(verifyFound<3){
+         if(direction && dir<=4) dir++; 
+         else if (!direction && dir >= -4) dir--;
+         if(delayValue> 150) delayValue-=9; 
+ }else{
+   if(dir !=0){
+     if(direction) dir--;
+     else dir++;
+   }
+ }
  
   //When the current proximity is closer than the given distance threshold, we've found an object.
  //Set verifyFound up by one. After a few recursive calls, if this is true for consecutive angles, 
