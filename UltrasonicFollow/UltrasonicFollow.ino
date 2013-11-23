@@ -81,28 +81,29 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
 	    the object again when sweeping in the reverse direction, in case it has moved. verifyEdge will
 	    increase every time there's a disparity between the previous distance and the newDistance. 
 	    After verifyEdge is greater than a constant, we can be sure we've hit an edge and not a sensor glitch */ 
-	 if(newDistance >  distance+10) {
+	 if(newDistance >  distance+5 ) {
                 Serial.print("    EDGE   (");
                 Serial.print(newDistance);
                 Serial.print(","); 
                 Serial.print(1.3*distance);
                 Serial.print(")           ");   
                 verifyEdge++; 
+                newDistance = distance; 
          }
 	 else{
 		 if (verifyEdge>0) verifyEdge--; //start removing verifyEdge points if there aren't disparities. 
-                 distance = newDistance+10;
+                 distance = newDistance;
 	 }
    
 	 //We're sure there's an edge, reverse sensor direction and look for the object again
 	 if(verifyEdge>=3){
                    Serial.println();
-		 follow(angle,distance+15,-dir,--verifyFound,0,delayValue);
+		 follow(angle+dir,distance,-dir,--verifyFound,0,delayValue);
 	 }
    
 	 //Keep following the object
 	 //if(newDistance <= distance) follow(angle,newDistance,dir,true,0); 
-	 follow(angle,distance,dir,verifyFound,verifyEdge,delayValue);
+	 follow(angle,newDistance,dir,verifyFound,verifyEdge,delayValue);
  }
  if(verifyFound==0){
          if(direction) dir = 4;
@@ -113,8 +114,8 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
   //When the current proximity is closer than the given distance threshold, we've found an object.
  //Set verifyFound up by one. After a few recursive calls, if this is true for consecutive angles, 
  //we will begin tracking the object. 
- if(newDistance > distance && verifyFound > 0) verifyFound--;
- else if(newDistance <= distance) verifyFound++; 
+ if(newDistance > distance+15 && verifyFound > 0) verifyFound--;
+ else if(newDistance <= distance + 5) verifyFound++; 
  else if(verifyFound >= 3) distance = newDistance+10; 
  
  //catchall. If The object isn't found, just keep scanning
