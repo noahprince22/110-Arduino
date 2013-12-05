@@ -13,21 +13,32 @@ void setup(){
 	pinMode(A1,INPUT);
 }
 void loop() {
-  int distance = 0;
-  for(int i = 15;i<160;i++){
-    myservo.write(i); 
-    int newDistance = 0;
-     for(int i = 0; i<7;i++){
-	 newDistance += analogRead(A1);
-          delay(1);
-     }
-      distance+= newDistance = (int) newDistance/7;
-  }
-  minDistance = (int) (distance/145)/2;
-  Serial.print("MINDISTANCE =");
-  Serial.println(minDistance);
-	//Serial.print(ultrasonic.Ranging(CM));
-  follow(21,minDistance,3,0,0,400); 
+
+	//Do a sweep and take the average sensor value over that sweep, store it in distance.
+	int distance = 0;
+	for(int i = 15;i<160;i++){
+		myservo.write(i); 
+		int newDistance = 0;
+		for(int i = 0; i<7;i++){
+			newDistance += analogRead(A1);
+			delay(1);
+		}
+		distance+= newDistance = (int) newDistance/7;
+	}
+
+	/*the starting distance the sensor will look for objects is the average distance in the room
+	divided by a constant arbitrary number. This just gives some benchmark for what distances
+	we're expected to see.*/
+	minDistance = (int) (distance/145)/2.5;
+	Serial.print("MINDISTANCE =");
+	Serial.println(minDistance);
+
+	//Start object tracking
+	startTracking(minDistance); 
+}
+
+void startTracking(int minDistance){
+	follow(16,minDistance,3,0,0,400);
 }
 
 /*GENERAL IDEA */
@@ -42,12 +53,16 @@ the object again. */
 /*Takes the angle to begin searching at, the minimum distance to be considered an object,
 the direction to move the sensor in (-1 or 1), an int 'verifyFound' to describe whether the 
 function is currently tracking an object and account for sensor error in finding an object; 
-and verifyEdge, an integer used to count how many times the sensor has seen an edge in a row*/
+and verifyEdge, an integer used to count how many times the sensor has seen an edge in a row,
+and delayValue, a value to set the delay time between each tick, which is inversely proportional
+to the time the sensor spends not tracking an object*/
 void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int delayValue){
  boolean direction = dir > 0; 
    
  angle = angle + dir;
  myservo.write(angle);
+ 
+ //Take the average sensor value over 14*delay value ms. Store it as the new distance. 
  int newDistance = 0;
  for(int i = 0; i<14;i++){
 	 newDistance += analogRead(A1);
@@ -63,16 +78,15 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
    follow(6,minDistance,-dir,0,0,delayValue);
  }
  
- //grab sensor data
-
- //int newDistance = ultrasonic.Ranging(CM);
-  
  //If we've found an object, follow it until we hit an edge, then reverse direction
  if(verifyFound >= 3){   
+	 //print some lovely information
     	 Serial.print(angle);
 	 Serial.print(",");
 	 Serial.print(newDistance);
 	 Serial.print("; ");
+	 
+	 //set the magnitude of the ticks of the servo and the delay between ticks(arbitrary)
          if(direction) dir = 2;
          else dir = -2; 
          delayValue = 150;
@@ -82,11 +96,14 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
 	    increase every time there's a disparity between the previous distance and the newDistance. 
 	    After verifyEdge is greater than a constant, we can be sure we've hit an edge and not a sensor glitch */ 
 	 if(newDistance >  distance+5 ) {
+		 //notify Serial that we found an edge
                 Serial.print("    EDGE   (");
                 Serial.print(newDistance);
                 Serial.print(","); 
                 Serial.print(1.3*distance);
                 Serial.print(")           ");   
+
+		//increment verify edge, make the servo tick on smaller intervals for precision edge finding.
                 verifyEdge++; 
                 if(direction) dir = 1;
                  else dir = -1; 
@@ -96,6 +113,8 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
 	 else{
 		 if (verifyEdge>0) verifyEdge--; //start removing verifyEdge points if there aren't disparities. 
                  distance = newDistance;
+
+		 //Start decreasing the delayValue, the sensor will pick up speed as it tracks a longer object
                  if(delayValue > 50) delayValue-=9; 
 	 }
    
@@ -109,6 +128,8 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
 	 //if(newDistance <= distance) follow(angle,newDistance,dir,true,0); 
 	 follow(angle,newDistance,dir,verifyFound,verifyEdge,delayValue);
  }
+
+ //A bunch of technical stuff that happens while it's looking for an object to accelerate the servo
  if(verifyFound<3){
          if(direction && dir<=4) dir++; 
          else if (!direction && dir >= -4) dir--;
@@ -120,7 +141,7 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
    }
  }
  
-  //When the current proximity is closer than the given distance threshold, we've found an object.
+ //When the current proximity is closer than the given distance threshold, we've found an object.
  //Set verifyFound up by one. After a few recursive calls, if this is true for consecutive angles, 
  //we will begin tracking the object. 
  if(newDistance > distance+15 && verifyFound > 0) verifyFound--;
@@ -129,5 +150,4 @@ void follow(int angle, int distance, int dir,int verifyFound,int verifyEdge,int 
  
  //catchall. If The object isn't found, just keep scanning
  follow(angle,distance,dir,verifyFound,0,delayValue);
-
 }
